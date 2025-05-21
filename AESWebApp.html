@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AES Encryption/Decryption</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f7f8;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .container {
+            background-color: white;
+            padding: 40px 60px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        h1 {
+            margin-bottom: 30px;
+            color: #333;
+        }
+
+        button {
+            width: 180px;
+            padding: 15px 0;
+            margin: 10px 20px;
+            font-size: 18px;
+            font-weight: bold;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            color: white;
+            transition: background-color 0.3s ease;
+        }
+
+        #encryptBtn {
+            background-color: #007bff;
+        }
+
+        #encryptBtn:hover {
+            background-color: #0056b3;
+        }
+
+        #decryptBtn {
+            background-color: #28a745;
+        }
+
+        #decryptBtn:hover {
+            background-color: #1e7e34;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>AES Encryption/Decryption</h1>
+        <h2 class="text-center">Mời bạn lựa chọn</h2>
+        <button id="encryptBtn" onclick="location.href='AESWebAppEncrypt.html'">Encryption</button>
+        <button id="decryptBtn" onclick="location.href='AESWebAppDecrypt.html'">Decryption</button>
+    </div>
+</body>
+
+</html>

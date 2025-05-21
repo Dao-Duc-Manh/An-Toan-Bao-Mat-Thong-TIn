@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AES Encrypt Web App</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f7f8;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+
+        .container {
+            background-color: white;
+            padding: 30px 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            width: 400px;
+            box-sizing: border-box;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 25px;
+        }
+
+        label {
+            font-weight: bold;
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+        }
+
+        input[type="text"],
+        input[type="file"] {
+            width: 100%;
+            padding: 10px 12px;
+            margin-bottom: 20px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 14px;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px 0;
+            border: none;
+            border-radius: 4px;
+            background-color: #007bff;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        .result-container {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #e9ecef;
+            border-radius: 6px;
+            word-wrap: break-word;
+            max-height: 200px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 13px;
+            color: #333;
+        }
+
+        .download-link {
+            display: block;
+            margin-top: 10px;
+            text-align: center;
+            font-weight: bold;
+            color: #007bff;
+            text-decoration: none;
+        }
+
+        .download-link:hover {
+            text-decoration: underline;
+        }
+
+        .error {
+            color: #d9534f;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+
+        .nav-link {
+            display: block;
+            margin-top: 15px;
+            text-align: center;
+            font-weight: bold;
+            color: #555;
+            text-decoration: none;
+        }
+
+        .nav-link:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>AES Encryption</h1>
+        <label for="key">Enter AES Key (any length):</label>
+        <input type="text" id="key" placeholder="Enter key here" />
+        <label for="fileInput">Upload file to encrypt:</label>
+        <input type="file" id="fileInput" accept="image/*" />
+        <button id="encryptBtn">Encrypt</button>
+        <div id="errorMsg" class="error"></div>
+        <img id="imagePreview" src="" alt="Image Preview"
+            style="max-width: 100%; margin-top: 10px; display: none; border-radius: 6px;" />
+        <div id="resultContainer" class="result-container" style="display:none;">
+            <strong>Result (Base64 encoded):</strong><br />
+            <textarea id="resultText" readonly style="width:100%; height:100px;"></textarea>
+            <a id="downloadLink" href="#" download="" class="download-link">Download Result File</a>
+        </div>
+        <a href="AESWebAppDecrypt.html" class="nav-link">Go to Decryption Page</a>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <script>
+        const keyInput = document.getElementById('key');
+        const fileInput = document.getElementById('fileInput');
+        const encryptBtn = document.getElementById('encryptBtn');
+        const errorMsg = document.getElementById('errorMsg');
+        const resultContainer = document.getElementById('resultContainer');
+        const resultText = document.getElementById('resultText');
+        const downloadLink = document.getElementById('downloadLink');
+        const imagePreview = document.getElementById('imagePreview');
+
+        function clearResult() {
+            resultContainer.style.display = 'none';
+            resultText.value = '';
+            downloadLink.href = '#';
+            downloadLink.download = '';
+            errorMsg.textContent = '';
+            imagePreview.style.display = 'none';
+            imagePreview.src = '';
+        }
+
+        fileInput.addEventListener('change', () => {
+            const file = fileInput.files[0];
+            if (file && file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    imagePreview.src = e.target.result;
+                    imagePreview.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            } else {
+                imagePreview.style.display = 'none';
+                imagePreview.src = '';
+            }
+        });
+
+        function arrayBufferToBase64(buffer) {
+            let binary = '';
+            const bytes = new Uint8Array(buffer);
+            for (let i = 0; i < bytes.byteLength; i++) {
+                binary += String.fromCharCode(bytes[i]);
+            }
+            return window.btoa(binary);
+        }
+
+        function downloadFile(dataBase64, filename) {
+            const link = downloadLink;
+            link.href = 'data:application/octet-stream;base64,' + dataBase64;
+            link.download = filename;
+            link.style.display = 'block';
+        }
+
+        encryptBtn.addEventListener('click', () => {
+            clearResult();
+            const key = keyInput.value;
+            if (!key) {
+                errorMsg.textContent = 'Key is required.';
+                return;
+            }
+            if (fileInput.files.length === 0) {
+                errorMsg.textContent = 'Please select a file to encrypt.';
+                return;
+            }
+            const file = fileInput.files[0];
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                const wordArray = CryptoJS.lib.WordArray.create(e.target.result);
+                const keyWordArray = CryptoJS.SHA256(key);
+                const iv = CryptoJS.lib.WordArray.random(16);
+                const encrypted = CryptoJS.AES.encrypt(wordArray, keyWordArray, { iv: iv, mode: CryptoJS.mode.CBC, padding: CryptoJS.pad.Pkcs7 });
+                const ivAndCiphertext = iv.concat(encrypted.ciphertext);
+                const base64Result = CryptoJS.enc.Base64.stringify(ivAndCiphertext);
+                resultText.value = base64Result;
+                downloadFile(base64Result, file.name + '.aes');
+                resultContainer.style.display = 'block';
+            };
+            reader.readAsArrayBuffer(file);
+        });
+    </script>
+</body>
+
+</html>

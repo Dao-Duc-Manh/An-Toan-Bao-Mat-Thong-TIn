@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AES Decrypt Web App</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f7f8;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+
+        .container {
+            background-color: white;
+            padding: 30px 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            width: 400px;
+            box-sizing: border-box;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 25px;
+        }
+
+        label {
+            font-weight: bold;
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+        }
+
+        input[type="text"],
+        input[type="file"] {
+            width: 100%;
+            padding: 10px 12px;
+            margin-bottom: 20px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 14px;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px 0;
+            border: none;
+            border-radius: 4px;
+            background-color: #28a745;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #1e7e34;
+        }
+
+        .result-container {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #e9ecef;
+            border-radius: 6px;
+            word-wrap: break-word;
+            max-height: 200px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 13px;
+            color: #333;
+        }
+
+        .download-link {
+            display: block;
+            margin-top: 10px;
+            text-align: center;
+            font-weight: bold;
+            color: #007bff;
+            text-decoration: none;
+        }
+
+        .download-link:hover {
+            text-decoration: underline;
+        }
+
+        .error {
+            color: #d9534f;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+
+        .nav-link {
+            display: block;
+            margin-top: 15px;
+            text-align: center;
+            font-weight: bold;
+            color: #555;
+            text-decoration: none;
+        }
+
+        .nav-link:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>AES Decryption</h1>
+        <label for="key">Enter AES Key (any length):</label>
+        <input type="text" id="key" placeholder="Enter key here" />
+        <label for="fileInput">Upload file to decrypt:</label>
+        <input type="file" id="fileInput" accept="image/*" />
+        <button id="decryptBtn">Decrypt</button>
+        <div id="errorMsg" class="error"></div>
+        <img id="imagePreview" src="" alt="Image Preview"
+            style="max-width: 100%; margin-top: 10px; display: none; border-radius: 6px;" />
+        <div id="resultContainer" class="result-container" style="display:none;">
+            <strong>Result (Base64 encoded):</strong><br />
+            <textarea id="resultText" readonly style="width:100%; height:100px;"></textarea>
+            <a id="downloadLink" href="#" download="" class="download-link">Download Result File</a>
+        </div>
+        <a href="AESWebAppEncrypt.html" class="nav-link">Go to Encryption Page</a>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <script>
+        const keyInput = document.getElementById('key');
+        const fileInput = document.getElementById('fileInput');
+        const decryptBtn = document.getElementById('decryptBtn');
+        const errorMsg = document.getElementById('errorMsg');
+        const resultContainer = document.getElementById('resultContainer');
+        const resultText = document.getElementById('resultText');
+        const downloadLink = document.getElementById('downloadLink');
+        const imagePreview = document.getElementById('imagePreview');
+
+        function clearResult() {
+            resultContainer.style.display = 'none';
+            resultText.value = '';
+            downloadLink.href = '#';
+            downloadLink.download = '';
+            errorMsg.textContent = '';
+            imagePreview.style.display = 'none';
+            imagePreview.src = '';
+        }
+
+        fileInput.addEventListener('change', () => {
+            const file = fileInput.files[0];
+            if (file && file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    imagePreview.src = e.target.result;
+                    imagePreview.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            } else {
+                imagePreview.style.display = 'none';
+                imagePreview.src = '';
+            }
+        });
+
+        function arrayBufferToBase64(buffer) {
+            let binary = '';
+            const bytes = new Uint8Array(buffer);
+            for (let i = 0; i < bytes.byteLength; i++) {
+                binary += String.fromCharCode(bytes[i]);
+            }
+            return window.btoa(binary);
+        }
+
+        function downloadFile(dataBase64, filename) {
+            const link = downloadLink;
+            link.href = 'data:application/octet-stream;base64,' + dataBase64;
+            link.download = filename;
+            link.style.display = 'block';
+        }
+
+        decryptBtn.addEventListener('click', () => {
+            clearResult();
+            const key = keyInput.value;
+            if (!key) {
+                errorMsg.textContent = 'Key is required.';
+                return;
+            }
+            if (fileInput.files.length === 0) {
+                errorMsg.textContent = 'Please select a file to decrypt.';
+                return;
+            }
+            const file = fileInput.files[0];
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                try {
+                    const base64Str = arrayBufferToBase64(e.target.result);
+                    const keyWordArray = CryptoJS.SHA256(key);
+                    const ivAndCiphertext = CryptoJS.enc.Base64.parse(base64Str);
+                    const iv = CryptoJS.lib.WordArray.create(ivAndCiphertext.words.slice(0, 4));
+                    const ciphertext = CryptoJS.lib.WordArray.create(ivAndCiphertext.words.slice(4));
+                    const decrypted = CryptoJS.AES.decrypt({ ciphertext: ciphertext }, keyWordArray, { iv: iv, mode: CryptoJS.mode.CBC, padding: CryptoJS.pad.Pkcs7 });
+                    const decryptedBytes = decrypted.clone();
+                    if (!decryptedBytes.sigBytes) {
+                        throw new Error('Decryption failed. Possibly wrong key or corrupted file.');
+                    }
+                    // Convert decrypted WordArray to Uint8Array
+                    const uint8Array = new Uint8Array(decryptedBytes.sigBytes);
+                    for (let i = 0; i < decryptedBytes.sigBytes; i++) {
+                        uint8Array[i] = (decryptedBytes.words[i >>> 2] >>> (24 - (i % 4) * 8)) & 0xff;
+                    }
+                    // Create Blob from Uint8Array
+                    const blob = new Blob([uint8Array], { type: file.type || 'application/octet-stream' });
+                    // Create object URL for image preview
+                    const url = URL.createObjectURL(blob);
+                    imagePreview.src = url;
+                    imagePreview.style.display = 'block';
+                    // Prepare download link
+                    downloadLink.href = url;
+                    downloadLink.download = file.name.replace(/\.aes$/, '');
+                    downloadLink.style.display = 'block';
+                    // Clear text result area
+                    resultText.value = '';
+                    resultContainer.style.display = 'block';
+                } catch (err) {
+                    errorMsg.textContent = err.message;
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        });
+    </script>
+</body>
+
+</html>
+if (fileInput.files.length === 0) {
